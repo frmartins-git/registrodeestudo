@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Subject": {
+      "title": "Subject",
+      "description": "A study subject or discipline",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A specific topic within a subject",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "subjectId": { "type": "string" }
+      },
+      "required": ["name", "subjectId"]
+    },
+    "StudySession": {
+      "title": "Study Session",
+      "description": "A record of a study activity",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "goal": { "type": "string" },
+        "activity": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "subjectName": { "type": "string" },
+        "topicIds": { "type": "array", "items": { "type": "string" } },
+        "topicNames": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["date", "goal", "activity", "subjectId", "topicIds", "createdAt", "userId"]
+    }
+  },
+  "firestore": {
+    "subjects": {
+      "schema": "Subject",
+      "description": "Collection of study subjects"
+    },
+    "topics": {
+      "schema": "Topic",
+      "description": "Collection of topics linked to subjects"
+    },
+    "sessions": {
+      "schema": "StudySession",
+      "description": "User study sessions"
+    }
+  }
+}
