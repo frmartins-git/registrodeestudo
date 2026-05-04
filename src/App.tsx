@@ -259,7 +259,20 @@ export default function App() {
   }
 
   if (!user) {
-    const isMissingConfig = !import.meta.env.VITE_FIREBASE_API_KEY;
+    const requiredKeys = {
+      'API Key': import.meta.env.VITE_FIREBASE_API_KEY,
+      'Auth Domain': import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      'Project ID': import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      'Storage Bucket': import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      'Messaging Sender ID': import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      'App ID': import.meta.env.VITE_FIREBASE_APP_ID
+    };
+    
+    const missingKeys = Object.entries(requiredKeys)
+      .filter(([_, value]) => !value)
+      .map(([label]) => label);
+
+    const isMissingConfig = missingKeys.length > 0;
 
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 flex-col gap-4">
@@ -268,8 +281,8 @@ export default function App() {
             <p>⚠️ {isMissingConfig ? 'Configuração' : 'Conexão'} do Firebase com problemas!</p>
             <p className="font-normal opacity-80">
               {isMissingConfig 
-                ? 'Por favor, configure as variáveis de ambiente (VITE_FIREBASE_API_KEY, etc) nas configurações do projeto.'
-                : 'Não foi possível conectar ao banco de dados. Verifique sua conexão ou se as chaves estão corretas.'}
+                ? `Faltam os seguintes campos: ${missingKeys.join(', ')}. Configure-os no painel Secrets.`
+                : 'Não foi possível conectar ao banco de dados. Verifique suas credenciais.'}
             </p>
           </div>
         )}

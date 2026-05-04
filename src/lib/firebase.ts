@@ -10,19 +10,21 @@ import {
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "dummy-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "dummy-auth",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "dummy-project",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "dummy-storage",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "dummy-sender",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "dummy-app"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Check if critical keys are missing
-const isMissingConfig = !import.meta.env.VITE_FIREBASE_API_KEY;
+// Precise check for missing keys
+const missingKeys = Object.entries(firebaseConfig)
+  .filter(([_, value]) => !value)
+  .map(([key]) => `VITE_FIREBASE_${key.replace(/[A-Z]/g, letter => `_${letter}`).toUpperCase()}`);
 
-if (isMissingConfig) {
-  console.warn("⚠️ Firebase API Key missing. Please set VITE_FIREBASE_API_KEY in environment variables.");
+if (missingKeys.length > 0) {
+  console.warn(`⚠️ Chaves do Firebase ausentes no ambiente: ${missingKeys.join(', ')}`);
 }
 
 const app = initializeApp(firebaseConfig);
