@@ -1,35 +1,104 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny
+    
+    // 0. Global Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
+    // --- GLOBAL HELPERS ---
+    
     function isSignedIn() {
+      // For higher security, consider: request.auth != null && request.auth.token.email_verified == true;
       return request.auth != null;
     }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
     }
 
+    // --- ENTITY VALIDATION ---
+
+    function isValidSubject(data) {
+      return data.keys().hasAll(['name', 'userId', 'createdAt', 'updatedAt']) 
+        && data.keys().size() == 4
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.userId == request.auth.uid
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidTopic(data) {
+      return data.keys().hasAll(['name', 'subjectId', 'userId', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 5
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.subjectId is string && isValidId(data.subjectId)
+        && data.userId == request.auth.uid
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidSession(data) {
+      return data.keys().hasAll(['date', 'goal', 'activity', 'subjectId', 'subjectName', 'topicIds', 'topicNames', 'userId', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 10
+        && data.date is string && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.goal is string && data.goal.size() <= 200
+        && data.activity is string && data.activity.size() <= 200
+        && data.subjectId is string && isValidId(data.subjectId)
+        && data.subjectName is string && data.subjectName.size() <= 100
+        && data.topicIds is list && data.topicIds.size() <= 20
+        && data.topicNames is list && data.topicNames.size() <= 20
+        && data.userId == request.auth.uid
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    // --- MATCH BLOCKS ---
+
     match /subjects/{subjectId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(subjectId) && isValidSubject(incoming());
+      allow update: if isSignedIn() && isValidId(subjectId) 
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().name is string && incoming().name.size() <= 100
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt']);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
     match /topics/{topicId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(topicId) && isValidTopic(incoming());
+      allow update: if isSignedIn() && isValidId(topicId)
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt']);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
     match /sessions/{sessionId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(sessionId) && isValidSession(incoming());
+      allow update: if isSignedIn() && isValidId(sessionId)
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['date', 'goal', 'activity', 'subjectId', 'subjectName', 'topicIds', 'topicNames', 'updatedAt']);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
   }
 }

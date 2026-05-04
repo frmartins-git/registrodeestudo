@@ -10,12 +10,12 @@ import {
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBUBxZye1beRjm77cxLSkYcOBHP4Dy0CPU",
-  authDomain: "registrodeestudo.firebaseapp.com",
-  projectId: "registrodeestudo",
-  storageBucket: "registrodeestudo.firebasestorage.app",
-  messagingSenderId: "135607888329",
-  appId: "1:135607888329:web:6cb6eb5b64bf0ce1d9e018"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

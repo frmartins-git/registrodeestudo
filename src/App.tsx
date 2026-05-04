@@ -41,7 +41,8 @@ import {
   addDoc, 
   deleteDoc, 
   doc, 
-  orderBy 
+  orderBy,
+  serverTimestamp 
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -125,7 +126,11 @@ export default function App() {
     const unsubSessions = onSnapshot(qSessions, (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StudySession));
       // Sort in memory to avoid needing a composite index
-      data.sort((a, b) => b.createdAt - a.createdAt);
+      data.sort((a, b) => {
+        const timeA = a.createdAt?.seconds || 0;
+        const timeB = b.createdAt?.seconds || 0;
+        return timeB - timeA;
+      });
       setSessions(data);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'sessions');
@@ -152,13 +157,14 @@ export default function App() {
     }
   };
 
-  const handleAddSession = async (data: Omit<StudySession, 'id' | 'createdAt' | 'userId'>) => {
+  const handleAddSession = async (data: Omit<StudySession, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!user) return;
     try {
       await addDoc(collection(db, 'sessions'), {
         ...data,
         userId: user.uid,
-        createdAt: Date.now()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
     } catch (e: any) {
       handleFirestoreError(e, OperationType.CREATE, 'sessions');
@@ -177,7 +183,12 @@ export default function App() {
   const handleAddSubject = async (name: string) => {
     if (!user) return;
     try {
-      await addDoc(collection(db, 'subjects'), { name, userId: user.uid });
+      await addDoc(collection(db, 'subjects'), { 
+        name, 
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     } catch (e: any) {
       handleFirestoreError(e, OperationType.CREATE, 'subjects');
     }
@@ -198,7 +209,13 @@ export default function App() {
   const handleAddTopic = async (subjectId: string, name: string) => {
     if (!user) return;
     try {
-      await addDoc(collection(db, 'topics'), { subjectId, name, userId: user.uid });
+      await addDoc(collection(db, 'topics'), { 
+        subjectId, 
+        name, 
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     } catch (e: any) {
       handleFirestoreError(e, OperationType.CREATE, 'topics');
     }

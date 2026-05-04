@@ -5,9 +5,12 @@
       "description": "A study subject or discipline",
       "type": "object",
       "properties": {
-        "name": { "type": "string" }
+        "name": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["name"]
+      "required": ["name", "userId", "createdAt", "updatedAt"]
     },
     "Topic": {
       "title": "Topic",
@@ -15,9 +18,12 @@
       "type": "object",
       "properties": {
         "name": { "type": "string" },
-        "subjectId": { "type": "string" }
+        "subjectId": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["name", "subjectId"]
+      "required": ["name", "subjectId", "userId", "createdAt", "updatedAt"]
     },
     "StudySession": {
       "title": "Study Session",
@@ -31,10 +37,11 @@
         "subjectName": { "type": "string" },
         "topicIds": { "type": "array", "items": { "type": "string" } },
         "topicNames": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
         "userId": { "type": "string" }
       },
-      "required": ["date", "goal", "activity", "subjectId", "topicIds", "createdAt", "userId"]
+      "required": ["date", "goal", "activity", "subjectId", "topicIds", "createdAt", "updatedAt", "userId"]
     }
   },
   "firestore": {

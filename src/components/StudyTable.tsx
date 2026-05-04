@@ -225,8 +225,13 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete }) =>
                     key={session.id}
                     className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group"
                   >
-                    <td className="px-4 py-3 text-sm font-mono text-gray-600 dark:text-gray-400">
-                      {format(new Date(session.date), 'dd/MM/yyyy')}
+                    <td className="px-4 py-3 text-sm flex flex-col items-start gap-1">
+                      <span className="font-mono text-gray-600 dark:text-gray-400">
+                        {format(new Date(session.date), 'dd/MM/yyyy')}
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-md font-bold uppercase tracking-tighter">
+                        {format(new Date(session.date), 'EEEE', { locale: ptBR })}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
                       {session.goal}

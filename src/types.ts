@@ -3,12 +3,16 @@ export interface Topic {
   name: string;
   subjectId: string;
   userId: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface Subject {
   id: string;
   name: string;
   userId: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface StudySession {
@@ -20,7 +24,8 @@ export interface StudySession {
   subjectName: string; // Store name for easy display
   topicIds: string[]; // References Topic.ids
   topicNames: string[]; // Store names for easy display
-  createdAt: number;
+  createdAt: any;
+  updatedAt: any;
   userId: string;
 }
 
