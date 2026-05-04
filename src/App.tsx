@@ -49,6 +49,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [firebaseReady, setFirebaseReady] = useState(true);
   const [view, setView] = useState<'history' | 'subjects'>('history');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -88,12 +89,32 @@ export default function App() {
 
   // Auth Listener
   useEffect(() => {
-    testConnection();
+    const checkConn = async () => {
+      try {
+        await testConnection();
+      } catch (e) {
+        setFirebaseReady(false);
+      }
+    };
+    checkConn();
+    
+    // Safety timeout for loading
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth listener timed out. Check Firebase configuration.");
+        setLoading(false);
+      }
+    }, 5000);
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
+      clearTimeout(timeout);
     });
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   // Data Listeners
@@ -238,8 +259,20 @@ export default function App() {
   }
 
   if (!user) {
+    const isMissingConfig = !import.meta.env.VITE_FIREBASE_API_KEY;
+
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 flex-col gap-4">
+        {(isMissingConfig || !firebaseReady) && (
+          <div className="max-w-md w-full bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800 text-xs font-bold flex flex-col gap-1">
+            <p>⚠️ {isMissingConfig ? 'Configuração' : 'Conexão'} do Firebase com problemas!</p>
+            <p className="font-normal opacity-80">
+              {isMissingConfig 
+                ? 'Por favor, configure as variáveis de ambiente (VITE_FIREBASE_API_KEY, etc) nas configurações do projeto.'
+                : 'Não foi possível conectar ao banco de dados. Verifique sua conexão ou se as chaves estão corretas.'}
+            </p>
+          </div>
+        )}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -10,7 +10,7 @@ service cloud.firestore {
     // --- GLOBAL HELPERS ---
     
     function isSignedIn() {
-      // For higher security, consider: request.auth != null && request.auth.token.email_verified == true;
+      // Relaxed for now to prevent blocking users. In production, use email_verified.
       return request.auth != null;
     }
     
