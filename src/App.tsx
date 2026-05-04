@@ -260,12 +260,12 @@ export default function App() {
 
   if (!user) {
     const requiredKeys = {
-      'API Key': import.meta.env.VITE_FIREBASE_API_KEY,
-      'Auth Domain': import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      'Project ID': import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      'Storage Bucket': import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      'Messaging Sender ID': import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      'App ID': import.meta.env.VITE_FIREBASE_APP_ID
+      'VITE_FIREBASE_API_KEY': import.meta.env.VITE_FIREBASE_API_KEY,
+      'VITE_FIREBASE_AUTH_DOMAIN': import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      'VITE_FIREBASE_PROJECT_ID': import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      'VITE_FIREBASE_STORAGE_BUCKET': import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      'VITE_FIREBASE_MESSAGING_SENDER_ID': import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      'VITE_FIREBASE_APP_ID': import.meta.env.VITE_FIREBASE_APP_ID
     };
     
     const missingKeys = Object.entries(requiredKeys)
@@ -276,14 +276,31 @@ export default function App() {
 
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 flex-col gap-4">
-        {(isMissingConfig || !firebaseReady) && (
-          <div className="max-w-md w-full bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800 text-xs font-bold flex flex-col gap-1">
-            <p>⚠️ {isMissingConfig ? 'Configuração' : 'Conexão'} do Firebase com problemas!</p>
-            <p className="font-normal opacity-80">
-              {isMissingConfig 
-                ? `Faltam os seguintes campos: ${missingKeys.join(', ')}. Configure-os no painel Secrets.`
-                : 'Não foi possível conectar ao banco de dados. Verifique suas credenciais.'}
+        {isMissingConfig && (
+          <div className="max-w-md w-full bg-amber-50 border border-amber-200 p-6 rounded-xl text-amber-800 flex flex-col gap-3 shadow-sm">
+            <div className="flex items-center gap-2 font-bold text-sm">
+              <span className="text-lg">⚠️</span>
+              <p>Configuração Incompleta</p>
+            </div>
+            <p className="text-xs opacity-90 leading-relaxed">
+              Pela sua captura de tela, os nomes das variáveis parecem estar cortados ou incorretos. 
+              <strong> Os nomes no painel Secrets devem ser EXATAMENTE estes:</strong>
             </p>
+            <ul className="text-[10px] font-mono bg-white/50 p-2 rounded border border-amber-100 flex flex-col gap-1">
+              {Object.keys(requiredKeys).map(key => (
+                <li key={key} className={requiredKeys[key as keyof typeof requiredKeys] ? 'text-green-600' : 'text-red-600'}>
+                  {requiredKeys[key as keyof typeof requiredKeys] ? '✅' : '❌'} {key}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[10px] font-medium mt-1">
+              Dica: No seu print, o <i>STORAGE_BUCKET</i> parece estar sem o prefixo VITE_FIREBASE_.
+            </p>
+          </div>
+        )}
+        {!isMissingConfig && !firebaseReady && (
+          <div className="max-w-md w-full bg-red-50 border border-red-200 p-4 rounded-xl text-red-800 text-xs font-bold">
+            <p>❌ Erro de Conexão: As chaves estão presentes, mas o Firebase recusou a conexão. Verifique se os valores estão corretos.</p>
           </div>
         )}
         <motion.div 

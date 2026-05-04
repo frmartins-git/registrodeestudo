@@ -18,18 +18,31 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Precise check for missing keys
-const missingKeys = Object.entries(firebaseConfig)
-  .filter(([_, value]) => !value)
-  .map(([key]) => `VITE_FIREBASE_${key.replace(/[A-Z]/g, letter => `_${letter}`).toUpperCase()}`);
+// Check if we have at least an API Key before initializing
+const hasMinimumConfig = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
 
-if (missingKeys.length > 0) {
-  console.warn(`⚠️ Chaves do Firebase ausentes no ambiente: ${missingKeys.join(', ')}`);
+let app;
+try {
+  if (hasMinimumConfig) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    // Initialize with a dummy app to prevent crashes in the rest of the code
+    app = initializeApp({
+      apiKey: "dummy",
+      authDomain: "dummy",
+      projectId: "dummy-project",
+      storageBucket: "dummy",
+      messagingSenderId: "dummy",
+      appId: "dummy"
+    });
+    console.warn("⚠️ Firebase inicializado com config dummy - Faltam chaves no painel Secrets.");
+  }
+} catch (e) {
+  console.error("❌ Falha crítica ao inicializar Firebase:", e);
 }
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = getAuth(app!);
+export const db = getFirestore(app!);
 export const googleProvider = new GoogleAuthProvider();
 
 export enum OperationType {
