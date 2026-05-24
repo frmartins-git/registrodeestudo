@@ -552,7 +552,7 @@ export default function App() {
               <GraduationCap className="text-white" size={24} />
             </div>
             {!sidebarCollapsed && (
-              <span className="font-black text-lg tracking-tight truncate dark:text-white">EduManager</span>
+              <span className="font-black text-lg tracking-tight truncate dark:text-white">Metas</span>
             )}
           </div>
           {!sidebarCollapsed && (
