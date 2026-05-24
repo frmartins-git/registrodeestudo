@@ -4,17 +4,19 @@ import {
   GraduationCap, 
   LayoutDashboard, 
   Settings, 
-  LogOut, 
-  LogIn,
   Loader2,
-  Mail,
-  Lock,
-  UserPlus,
   Sun,
   Moon,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  LogOut,
+  LogIn,
+  Mail,
+  Lock,
+  Sparkles,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { StudySession, Subject, Topic } from './types';
 import { StudyTable } from './components/StudyTable';
@@ -25,10 +27,8 @@ import { cn } from './lib/utils';
 import { 
   auth, 
   db, 
-  signInWithGoogle, 
   logout,
   loginWithEmail,
-  registerWithEmail,
   handleFirestoreError,
   OperationType,
   testConnection
@@ -52,10 +52,14 @@ export default function App() {
   const [firebaseReady, setFirebaseReady] = useState(true);
   const [view, setView] = useState<'history' | 'subjects'>('history');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  
+  // Login Screen States
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved === 'true';
@@ -106,9 +110,25 @@ export default function App() {
       }
     }, 5000);
 
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+        setLoading(false);
+      } else {
+        const isGuest = localStorage.getItem('auth_guest') === 'true';
+        if (isGuest) {
+          setUser({
+            uid: 'guest-local-user',
+            displayName: 'Estudante Concurseiro',
+            email: 'estudo@local.com',
+            photoURL: null,
+            emailVerified: true,
+          } as any);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
       clearTimeout(timeout);
     });
     return () => {
@@ -124,6 +144,16 @@ export default function App() {
       setTopics([]);
       setSessions([]);
       return;
+    }
+
+    if (user.uid === 'guest-local-user') {
+      const localSubjects = JSON.parse(localStorage.getItem('local_subjects') || '[]');
+      const localTopics = JSON.parse(localStorage.getItem('local_topics') || '[]');
+      const localSessions = JSON.parse(localStorage.getItem('local_sessions') || '[]');
+      setSubjects(localSubjects);
+      setTopics(localTopics);
+      setSessions(localSessions);
+      return () => {};
     }
 
     const qSubjects = query(collection(db, 'subjects'), where('userId', '==', user.uid));
@@ -164,22 +194,21 @@ export default function App() {
     };
   }, [user]);
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    try {
-      if (authMode === 'login') {
-        await loginWithEmail(email, password);
-      } else {
-        await registerWithEmail(email, password);
-      }
-    } catch (error: any) {
-      setAuthError(error.message);
-    }
-  };
-
   const handleAddSession = async (data: Omit<StudySession, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (!user) return;
+    if (user.uid === 'guest-local-user') {
+      const newSession: StudySession = {
+        ...data,
+        id: 'session-' + Date.now(),
+        userId: user.uid,
+        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+        updatedAt: { seconds: Math.floor(Date.now() / 1000) }
+      };
+      const updated = [newSession, ...sessions];
+      setSessions(updated);
+      localStorage.setItem('local_sessions', JSON.stringify(updated));
+      return;
+    }
     try {
       await addDoc(collection(db, 'sessions'), {
         ...data,
@@ -194,6 +223,12 @@ export default function App() {
 
   const handleDeleteSession = async (id: string) => {
     if (!id) return;
+    if (user?.uid === 'guest-local-user') {
+      const updated = sessions.filter(s => s.id !== id);
+      setSessions(updated);
+      localStorage.setItem('local_sessions', JSON.stringify(updated));
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'sessions', id));
     } catch (e: any) {
@@ -203,6 +238,19 @@ export default function App() {
 
   const handleAddSubject = async (name: string) => {
     if (!user) return;
+    if (user.uid === 'guest-local-user') {
+      const newSubject: Subject = {
+        id: 'subject-' + Date.now(),
+        name,
+        userId: user.uid,
+        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+        updatedAt: { seconds: Math.floor(Date.now() / 1000) }
+      };
+      const updated = [...subjects, newSubject];
+      setSubjects(updated);
+      localStorage.setItem('local_subjects', JSON.stringify(updated));
+      return;
+    }
     try {
       await addDoc(collection(db, 'subjects'), { 
         name, 
@@ -216,6 +264,20 @@ export default function App() {
   };
 
   const handleDeleteSubject = async (id: string) => {
+    if (user?.uid === 'guest-local-user') {
+      const updatedSubjects = subjects.filter(s => s.id !== id);
+      setSubjects(updatedSubjects);
+      localStorage.setItem('local_subjects', JSON.stringify(updatedSubjects));
+
+      const updatedTopics = topics.filter(t => t.subjectId !== id);
+      setTopics(updatedTopics);
+      localStorage.setItem('local_topics', JSON.stringify(updatedTopics));
+
+      const updatedSessions = sessions.filter(s => s.subjectId !== id);
+      setSessions(updatedSessions);
+      localStorage.setItem('local_sessions', JSON.stringify(updatedSessions));
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'subjects', id));
       const relatedTopics = topics.filter(t => t.subjectId === id);
@@ -229,6 +291,20 @@ export default function App() {
 
   const handleAddTopic = async (subjectId: string, name: string) => {
     if (!user) return;
+    if (user.uid === 'guest-local-user') {
+      const newTopic: Topic = {
+        id: 'topic-' + Date.now(),
+        subjectId,
+        name,
+        userId: user.uid,
+        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+        updatedAt: { seconds: Math.floor(Date.now() / 1000) }
+      };
+      const updated = [...topics, newTopic];
+      setTopics(updated);
+      localStorage.setItem('local_topics', JSON.stringify(updated));
+      return;
+    }
     try {
       await addDoc(collection(db, 'topics'), { 
         subjectId, 
@@ -243,6 +319,12 @@ export default function App() {
   };
 
   const handleDeleteTopic = async (id: string) => {
+    if (user?.uid === 'guest-local-user') {
+      const updated = topics.filter(t => t.id !== id);
+      setTopics(updated);
+      localStorage.setItem('local_topics', JSON.stringify(updated));
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'topics', id));
     } catch (e: any) {
@@ -250,9 +332,45 @@ export default function App() {
     }
   };
 
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setAuthError("Por favor, preencha todos os campos.");
+      return;
+    }
+    setAuthError(null);
+    setAuthLoading(true);
+    try {
+      await loginWithEmail(email, password);
+      localStorage.removeItem('auth_guest');
+    } catch (error: any) {
+      console.error("Erro na autenticação:", error);
+      let translateMsg = error.message;
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        translateMsg = "E-mail ou senha incorretos.";
+      } else if (error.code === 'auth/invalid-email') {
+        translateMsg = "Formato de e-mail inválido.";
+      }
+      setAuthError(translateMsg);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleEnterAsGuest = () => {
+    localStorage.setItem('auth_guest', 'true');
+    setUser({
+      uid: 'guest-local-user',
+      displayName: 'Estudante Concurseiro',
+      email: 'estudo@local.com',
+      photoURL: null,
+      emailVerified: true,
+    } as any);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <Loader2 className="animate-spin text-blue-600" size={40} />
       </div>
     );
@@ -275,52 +393,42 @@ export default function App() {
     const isMissingConfig = missingKeys.length > 0;
 
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 flex-col gap-4">
-        {isMissingConfig && (
-          <div className="max-w-md w-full bg-amber-50 border border-amber-200 p-6 rounded-xl text-amber-800 flex flex-col gap-3 shadow-sm">
-            <div className="flex items-center gap-2 font-bold text-sm">
-              <span className="text-lg">⚠️</span>
-              <p>Configuração Incompleta</p>
-            </div>
-            <p className="text-xs opacity-90 leading-relaxed">
-              Pela sua captura de tela, os nomes das variáveis parecem estar cortados ou incorretos. 
-              <strong> Os nomes no painel Secrets devem ser EXATAMENTE estes:</strong>
-            </p>
-            <ul className="text-[10px] font-mono bg-white/50 p-2 rounded border border-amber-100 flex flex-col gap-1">
-              {Object.keys(requiredKeys).map(key => (
-                <li key={key} className={requiredKeys[key as keyof typeof requiredKeys] ? 'text-green-600' : 'text-red-600'}>
-                  {requiredKeys[key as keyof typeof requiredKeys] ? '✅' : '❌'} {key}
-                </li>
-              ))}
-            </ul>
-            <p className="text-[10px] font-medium mt-1">
-              Dica: No seu print, o <i>STORAGE_BUCKET</i> parece estar sem o prefixo VITE_FIREBASE_.
-            </p>
-          </div>
-        )}
-        {!isMissingConfig && !firebaseReady && (
-          <div className="max-w-md w-full bg-red-50 border border-red-200 p-4 rounded-xl text-red-800 text-xs font-bold">
-            <p>❌ Erro de Conexão: As chaves estão presentes, mas o Firebase recusou a conexão. Verifique se os valores estão corretos.</p>
-          </div>
-        )}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-4 transition-colors duration-300">
+        <div className="absolute top-4 right-4">
+          <button 
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+          >
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+        </div>
+
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl shadow-blue-100 border border-gray-100 space-y-6"
+          transition={{ duration: 0.4 }}
+          className="max-w-md w-full bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 space-y-6"
         >
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-200 mb-4">
-              <GraduationCap className="text-white" size={32} />
+            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-200 dark:shadow-none mb-3">
+              <GraduationCap className="text-white" size={28} />
             </div>
-            <h1 className="text-2xl font-black text-gray-900">Gestor de Estudos</h1>
-            <p className="text-gray-500 font-medium text-sm">
-              {authMode === 'login' ? 'Entre na sua conta' : 'Crie sua conta gratuita'}
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">EduManager</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+              Sua rotina inteligente de estudos para concursos
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1 text-center bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-2xl border border-gray-100/50 dark:border-gray-800/50">
+            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Acesse sua Conta</h2>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              Entre com seu e-mail e senha para salvar e sincronizar sua rotina
             </p>
           </div>
 
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-500 ml-1">E-mail</label>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 ml-1">E-mail</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
@@ -328,64 +436,91 @@ export default function App() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-sm font-semibold"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 rounded-2xl outline-none transition-all text-sm font-semibold text-gray-900 dark:text-white"
                   placeholder="seu@email.com"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-500 ml-1">Senha</label>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 ml-1">Senha</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-sm font-semibold"
-                  placeholder="sua senha"
+                  className="w-full pl-11 pr-12 py-3 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 rounded-2xl outline-none transition-all text-sm font-semibold text-gray-900 dark:text-white"
+                  placeholder="Sua senha"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
             {authError && (
-              <p className="text-red-500 text-[10px] font-bold text-center px-4">{authError}</p>
+              <p className="text-red-500 text-xs font-bold text-center px-4 bg-red-50 dark:bg-red-950/20 py-2 rounded-xl border border-red-100 dark:border-red-900/30">
+                {authError}
+              </p>
             )}
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-blue-200 active:scale-95 flex items-center justify-center gap-2"
+              disabled={authLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-70 disabled:pointer-events-none"
             >
-              {authMode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-              {authMode === 'login' ? 'Entrar' : 'Cadastrar'}
+              {authLoading ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <>
+                  <LogIn size={18} />
+                  <span>Entrar</span>
+                </>
+              )}
             </button>
           </form>
 
-          <div className="relative flex items-center gap-4 py-2">
-            <div className="flex-1 h-px bg-gray-100"></div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ou</span>
-            <div className="flex-1 h-px bg-gray-100"></div>
+          <div className="relative flex items-center gap-4 py-1">
+            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">ou</span>
+            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
           </div>
 
-          <button
-            onClick={() => signInWithGoogle()}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-gray-200 py-3.5 rounded-2xl font-bold text-gray-700 transition-all hover:bg-gray-50 active:scale-95"
-          >
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-            Entrar com Google
-          </button>
-
-          <p className="text-center text-xs text-gray-500 font-bold">
-            {authMode === 'login' ? 'Não tem conta?' : 'Já tem uma conta?'}
-            <button 
-              type="button"
-              onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-              className="text-blue-600 ml-1 hover:underline"
+          <div className="text-center">
+            <button
+              onClick={handleEnterAsGuest}
+              className="text-xs font-semibold text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
             >
-              {authMode === 'login' ? 'Cadastre-se' : 'Faça login'}
+              Continuar como visitante (Modo Local Offline)
             </button>
-          </p>
+          </div>
+
+          {/* Config issues warning */}
+          {isMissingConfig && (
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 p-4 rounded-2xl text-amber-800 dark:text-amber-300 flex flex-col gap-2 text-xs">
+              <div className="flex items-center gap-2 font-bold select-none">
+                <span>⚠️</span>
+                <span>Configurações do Firebase Incompletas</span>
+              </div>
+              <p className="opacity-95 leading-relaxed leading-snug">
+                Faltam chaves de ambiente necessárias no painel <strong>Secrets</strong> do projeto para as funcionalidades em nuvem. 
+                Use o botão <i>Continuar como visitante</i> ou configure as seguintes chaves pendentes:
+              </p>
+              <ul className="font-mono text-[9px] bg-white/60 dark:bg-black/20 p-2 rounded border border-amber-100 dark:border-amber-950 flex flex-col gap-1">
+                {Object.keys(requiredKeys).map(key => (
+                  <li key={key} className={requiredKeys[key as keyof typeof requiredKeys] ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400 font-bold'}>
+                    {requiredKeys[key as keyof typeof requiredKeys] ? '✅' : '❌'} {key}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </motion.div>
       </div>
     );
@@ -472,33 +607,55 @@ export default function App() {
             {!sidebarCollapsed && <span>{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>}
           </button>
 
-          <div className={cn(
-            "bg-gray-50 dark:bg-gray-800/50 p-2 rounded-2xl flex items-center transition-all",
-            sidebarCollapsed ? "justify-center" : "gap-3 p-4"
-          )}>
-            <img 
-              src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} 
-              alt={user.displayName || 'Usuário'} 
-              className="w-10 h-10 rounded-xl border-2 border-white dark:border-gray-700 shadow-sm flex-shrink-0"
-            />
-            {!sidebarCollapsed && (
-              <div className="overflow-hidden">
-                <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{user.displayName || 'Usuário'}</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
-              </div>
-            )}
+          <div className="flex flex-col gap-2">
+            <div className={cn(
+              "bg-gray-50 dark:bg-gray-800/50 p-2 rounded-2xl flex items-center transition-all",
+              sidebarCollapsed ? "justify-center" : "gap-3 p-4"
+            )}>
+              <img 
+                src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'Estudante'}`} 
+                alt={user.displayName || 'Estudante'} 
+                className="w-10 h-10 rounded-xl border-2 border-white dark:border-gray-700 shadow-sm flex-shrink-0"
+              />
+              {!sidebarCollapsed && (
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{user.displayName || 'Estudante'}</p>
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                      {user.email || 'Modo Sem Login'}
+                    </p>
+                    {user.uid === 'guest-local-user' && (
+                      <span className="text-[8px] max-w-max text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-1 py-0.5 rounded font-semibold">
+                        Modo Visitante
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={async () => {
+                localStorage.removeItem('auth_guest');
+                if (user.uid !== 'guest-local-user') {
+                  try {
+                    await logout();
+                  } catch (err) {
+                    console.error("Erro ao deslogar:", err);
+                  }
+                }
+                setUser(null);
+              }}
+              className={cn(
+                "w-full flex items-center text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-xs font-bold transition-all py-2.5",
+                sidebarCollapsed ? "justify-center" : "gap-3 px-4"
+              )}
+              title="Sair da Conta"
+            >
+              <LogOut size={16} />
+              {!sidebarCollapsed && <span>Sair da Conta</span>}
+            </button>
           </div>
-          <button 
-            onClick={() => logout()}
-            className={cn(
-              "w-full flex items-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl text-sm font-bold transition-all",
-              sidebarCollapsed ? "justify-center px-2 py-4" : "gap-3 px-4 py-3"
-            )}
-            title="Sair"
-          >
-            <LogOut size={18} />
-            {!sidebarCollapsed && <span>Sair</span>}
-          </button>
         </div>
       </aside>
 
