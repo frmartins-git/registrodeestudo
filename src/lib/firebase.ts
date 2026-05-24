@@ -9,6 +9,15 @@ import {
 } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 
+const fallbacks: Record<string, string> = {
+  VITE_FIREBASE_API_KEY: "AIzaSyBUBxZye1beRjm77cxLSkYcOBHP4Dy0CPU",
+  VITE_FIREBASE_AUTH_DOMAIN: "registrodeestudo.firebaseapp.com",
+  VITE_FIREBASE_PROJECT_ID: "registrodeestudo",
+  VITE_FIREBASE_STORAGE_BUCKET: "registrodeestudo.firebasestorage.app",
+  VITE_FIREBASE_MESSAGING_SENDER_ID: "135607888329",
+  VITE_FIREBASE_APP_ID: "1:135607888329:web:6cb6eb5b64bf0ce1d9e018",
+};
+
 const getEnvVar = (standardKey: string, alternateKeys: string[]): string => {
   // Try standard first
   let val = import.meta.env[standardKey];
@@ -39,6 +48,12 @@ const getEnvVar = (standardKey: string, alternateKeys: string[]): string => {
   } catch (e) {
     // Fallback if Object.keys fails
   }
+
+  // Use hardcoded fallback for default project keys if no env variables exist
+  if (fallbacks[standardKey]) {
+    return fallbacks[standardKey];
+  }
+  
   return '';
 };
 

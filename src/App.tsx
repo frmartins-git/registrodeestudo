@@ -347,11 +347,20 @@ export default function App() {
       localStorage.removeItem('auth_guest');
     } catch (error: any) {
       console.error("Erro na autenticação:", error);
-      let translateMsg = error.message;
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      let translateMsg = error.message || String(error);
+      const isApiKeyErr = error.code === 'auth/api-key-not-valid' || 
+                          translateMsg.includes('api-key-not-valid') || 
+                          translateMsg.includes('invalid-api-key') ||
+                          translateMsg.includes('API key');
+
+      if (isApiKeyErr) {
+        translateMsg = "Erro no Netlify/Prod: A chave de API do Firebase não está configurada ou foi compilada em branco. No Netlify, você precisa adicionar as variáveis em 'Site settings > Environment variables' e depois realizar um NOVO DEPLOY para embuti-las no código compilado.";
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         translateMsg = "E-mail ou senha incorretos.";
       } else if (error.code === 'auth/invalid-email') {
         translateMsg = "Formato de e-mail inválido.";
+      } else if (error.code === 'auth/network-request-failed') {
+        translateMsg = "Erro de rede: Verifique sua conexão com a internet.";
       }
       setAuthError(translateMsg);
     } finally {
