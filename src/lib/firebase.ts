@@ -9,13 +9,54 @@ import {
 } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 
+const getEnvVar = (standardKey: string, alternateKeys: string[]): string => {
+  // Try standard first
+  let val = import.meta.env[standardKey];
+  if (val) return String(val).trim();
+  
+  // Try alternate keys
+  for (const alt of alternateKeys) {
+    const altVal = import.meta.env[alt];
+    if (altVal) return String(altVal).trim();
+  }
+  
+  // Look for partial matches in all keys of import.meta.env
+  try {
+    const keys = Object.keys(import.meta.env);
+    for (const k of keys) {
+      if (k.startsWith('VITE_FIREBASE_')) {
+        const simplifiedK = k.replace('VITE_FIREBASE_', '');
+        const simplifiedStandard = standardKey.replace('VITE_FIREBASE_', '');
+        if (simplifiedStandard.startsWith(simplifiedK) || simplifiedK.startsWith(simplifiedStandard)) {
+          return String(import.meta.env[k]).trim();
+        }
+      }
+      // Special check for STORAGE_BUCKET or SE_STORAGE_BUCKET
+      if (k.includes('STORAGE_BUCKET') && standardKey.includes('STORAGE_BUCKET')) {
+        return String(import.meta.env[k]).trim();
+      }
+    }
+  } catch (e) {
+    // Fallback if Object.keys fails
+  }
+  return '';
+};
+
+let apiKey = getEnvVar('VITE_FIREBASE_API_KEY', ['VITE_FIREBASE_API_K']);
+if (apiKey) {
+  // Auto-correct common copy-paste typo: 'AlzaSy' instead of 'AIzaSy' (lowercase L instead of uppercase I)
+  if (apiKey.startsWith('AlzaSy')) {
+    apiKey = 'AIzaSy' + apiKey.slice(6);
+  }
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: apiKey,
+  authDomain: getEnvVar('VITE_FIREBASE_AUTH_DOMAIN', ['VITE_FIREBASE_AUTH']),
+  projectId: getEnvVar('VITE_FIREBASE_PROJECT_ID', ['VITE_FIREBASE_PROJI', 'VITE_FIREBASE_PROJ']),
+  storageBucket: getEnvVar('VITE_FIREBASE_STORAGE_BUCKET', ['SE_STORAGE_BUCKET']),
+  messagingSenderId: getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID', ['VITE_FIREBASE_MESS']),
+  appId: getEnvVar('VITE_FIREBASE_APP_ID', ['VITE_FIREBASE_APP_I', 'VITE_FIREBASE_APP_II'])
 };
 
 // Check if we have at least an API Key before initializing
@@ -44,6 +85,7 @@ try {
 export const auth = getAuth(app!);
 export const db = getFirestore(app!);
 export const googleProvider = new GoogleAuthProvider();
+export { firebaseConfig, hasMinimumConfig };
 
 export enum OperationType {
   CREATE = 'create',

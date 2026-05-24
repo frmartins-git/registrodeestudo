@@ -31,7 +31,9 @@ import {
   loginWithEmail,
   handleFirestoreError,
   OperationType,
-  testConnection
+  testConnection,
+  firebaseConfig,
+  hasMinimumConfig
 } from './lib/firebase';
 import { 
   collection, 
@@ -378,19 +380,19 @@ export default function App() {
 
   if (!user) {
     const requiredKeys = {
-      'VITE_FIREBASE_API_KEY': import.meta.env.VITE_FIREBASE_API_KEY,
-      'VITE_FIREBASE_AUTH_DOMAIN': import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      'VITE_FIREBASE_PROJECT_ID': import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      'VITE_FIREBASE_STORAGE_BUCKET': import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      'VITE_FIREBASE_MESSAGING_SENDER_ID': import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      'VITE_FIREBASE_APP_ID': import.meta.env.VITE_FIREBASE_APP_ID
+      'VITE_FIREBASE_API_KEY': firebaseConfig.apiKey,
+      'VITE_FIREBASE_AUTH_DOMAIN': firebaseConfig.authDomain,
+      'VITE_FIREBASE_PROJECT_ID': firebaseConfig.projectId,
+      'VITE_FIREBASE_STORAGE_BUCKET': firebaseConfig.storageBucket,
+      'VITE_FIREBASE_MESSAGING_SENDER_ID': firebaseConfig.messagingSenderId,
+      'VITE_FIREBASE_APP_ID': firebaseConfig.appId
     };
     
     const missingKeys = Object.entries(requiredKeys)
       .filter(([_, value]) => !value)
       .map(([label]) => label);
 
-    const isMissingConfig = missingKeys.length > 0;
+    const isMissingConfig = !hasMinimumConfig || missingKeys.length > 0;
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-4 transition-colors duration-300">
