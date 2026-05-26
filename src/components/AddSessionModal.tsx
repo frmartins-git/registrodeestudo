@@ -156,14 +156,14 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 overflow-hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] overflow-hidden"
           />
           
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4 pointer-events-none"
           >
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto custom-scrollbar">
               <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900 z-10">
@@ -334,14 +334,15 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={() => setIsManageOpen(false)}
-                  className="fixed inset-0 bg-black/70 backdrop-blur-xs z-55 flex items-center justify-center p-4"
+                  className="fixed inset-0 bg-black/70 backdrop-blur-xs z-[90] overflow-hidden"
                 />
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                  className="fixed inset-4 sm:inset-auto sm:w-full sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden z-55 flex flex-col self-center justify-self-center my-auto"
+                  className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
                 >
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden w-full max-w-md flex flex-col pointer-events-auto max-h-[90vh]">
                   {/* Header */}
                   <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-850/50">
                     <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -515,6 +516,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                     >
                       Concluir
                     </button>
+                  </div>
                   </div>
                 </motion.div>
               </>

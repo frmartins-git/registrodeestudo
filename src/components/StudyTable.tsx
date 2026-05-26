@@ -272,7 +272,8 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                     exit={{ opacity: 0, scale: 0.95 }}
                     key={session.id}
                     className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group"
-                  >                    <td className={cn(
+                  >
+                    <td className={cn(
                       "px-4 py-3 text-sm flex flex-col items-start gap-1 border-l-4 shadow-inner",
                       getGoalColorClass(session.goal).border
                     )}>
