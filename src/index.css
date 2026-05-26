@@ -6,4 +6,8 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+html, body, #root, input, select, textarea, button {
+  font-family: var(--font-sans);
+}
+
 @variant dark (&:where(.dark, .dark *));

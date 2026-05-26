@@ -44,7 +44,8 @@ import {
   deleteDoc, 
   doc, 
   orderBy,
-  serverTimestamp 
+  serverTimestamp,
+  updateDoc
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -235,6 +236,24 @@ export default function App() {
       await deleteDoc(doc(db, 'sessions', id));
     } catch (e: any) {
       handleFirestoreError(e, OperationType.DELETE, 'sessions/' + id);
+    }
+  };
+
+  const handleUpdateSession = async (id: string, updatedFields: Partial<StudySession>) => {
+    if (!id) return;
+    if (user?.uid === 'guest-local-user') {
+      const updated = sessions.map(s => s.id === id ? { ...s, ...updatedFields } : s);
+      setSessions(updated);
+      localStorage.setItem('local_sessions', JSON.stringify(updated));
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'sessions', id), {
+        ...updatedFields,
+        updatedAt: serverTimestamp()
+      });
+    } catch (e: any) {
+      handleFirestoreError(e, OperationType.UPDATE, 'sessions/' + id);
     }
   };
 
@@ -705,7 +724,7 @@ export default function App() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registros de Atividades</h3>
               </div>
-              <StudyTable sessions={sessions} onDelete={handleDeleteSession} />
+              <StudyTable sessions={sessions} onDelete={handleDeleteSession} onUpdate={handleUpdateSession} />
             </div>
           ) : (
             <SubjectsView 
@@ -727,6 +746,8 @@ export default function App() {
         availableSubjects={subjects}
         availableTopics={topics}
         sessions={sessions}
+        onAddSubject={handleAddSubject}
+        onAddTopic={handleAddTopic}
       />
     </div>
   );

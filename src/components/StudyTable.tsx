@@ -12,15 +12,62 @@ import {
   Calendar,
   Target,
   BookOpen,
-  Tag
+  Tag,
+  Star
 } from 'lucide-react';
 import { StudySession, SortConfig, FilterConfig } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
+const GOAL_PALETTES = [
+  {
+    bg: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-150 dark:border-indigo-800/80",
+    border: "border-indigo-500"
+  },
+  {
+    bg: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-150 dark:border-emerald-800/80",
+    border: "border-emerald-500"
+  },
+  {
+    bg: "bg-amber-50 dark:bg-amber-950/44 text-amber-700 dark:text-amber-300 border-amber-150 dark:border-amber-800/80",
+    border: "border-amber-500"
+  },
+  {
+    bg: "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-150 dark:border-purple-800/80",
+    border: "border-purple-500"
+  },
+  {
+    bg: "bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border-pink-150 dark:border-pink-800/80",
+    border: "border-pink-500"
+  },
+  {
+    bg: "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-150 dark:border-cyan-800/80",
+    border: "border-cyan-500"
+  },
+  {
+    bg: "bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-150 dark:border-orange-850/80",
+    border: "border-orange-500"
+  },
+  {
+    bg: "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-150 dark:border-sky-800/80",
+    border: "border-sky-500"
+  }
+];
+
+const getGoalColorClass = (goal: string) => {
+  if (!goal) return GOAL_PALETTES[0];
+  let hash = 0;
+  for (let i = 0; i < goal.length; i++) {
+    hash = goal.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % GOAL_PALETTES.length;
+  return GOAL_PALETTES[index];
+};
+
 interface StudyTableProps {
   sessions: StudySession[];
   onDelete: (id: string) => void;
+  onUpdate: (id: string, updatedFields: Partial<StudySession>) => void;
 }
 
 const TableHeader = ({ 
@@ -71,11 +118,12 @@ const TableHeader = ({
   </th>
 );
 
-export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete }) => {
+export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUpdate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'activity', direction: 'asc' });
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterConfig>({});
+  const [activeDifficultyMenu, setActiveDifficultyMenu] = useState<string | null>(null);
 
   const handleSort = (key: keyof StudySession) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -224,23 +272,135 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete }) =>
                     exit={{ opacity: 0, scale: 0.95 }}
                     key={session.id}
                     className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group"
-                  >
-                    <td className="px-4 py-3 text-sm flex flex-col items-start gap-1">
-                      <span className="font-mono text-gray-600 dark:text-gray-400">
-                        {format(new Date(session.date), 'dd/MM/yyyy')}
+                  >                    <td className={cn(
+                      "px-4 py-3 text-sm flex flex-col items-start gap-1 border-l-4 shadow-inner",
+                      getGoalColorClass(session.goal).border
+                    )}>
+                      <span className="font-mono text-gray-550 dark:text-gray-400 font-semibold text-xs">
+                        {format(new Date(session.date), "dd/MM/yyyy")}
                       </span>
                       <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-md font-bold uppercase tracking-tighter">
                         {format(new Date(session.date), 'EEEE', { locale: ptBR })}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {session.goal}
+                    <td className="px-4 py-3 text-sm font-medium">
+                      {(() => {
+                        const style = getGoalColorClass(session.goal);
+                        return (
+                          <span className={cn(
+                            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap shadow-sm transition-all duration-300",
+                            style.bg
+                          )}>
+                            {session.goal}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      {session.activity}
+                      <div className="flex items-center gap-2 group/activity select-none relative">
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">
+                          {session.activity}
+                        </span>
+                        
+                        <div className="relative inline-block">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setActiveDifficultyMenu(activeDifficultyMenu === session.id ? null : session.id);
+                            }}
+                            className={cn(
+                              "p-1 rounded-md cursor-pointer transition-all flex items-center justify-center border",
+                              session.difficulty === 'easy' && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 border-emerald-100 dark:border-emerald-800/50 hover:bg-emerald-100/50",
+                              session.difficulty === 'medium' && "bg-amber-50 dark:bg-amber-900/30 text-amber-500 border-amber-100 dark:border-amber-800/50 hover:bg-amber-100/50",
+                              session.difficulty === 'hard' && "bg-rose-50 dark:bg-rose-900/30 text-rose-500 border-rose-100 dark:border-rose-800/50 hover:bg-rose-100/50",
+                              (!session.difficulty) && "bg-gray-50/50 dark:bg-gray-800/50 text-gray-400 border-gray-100 dark:border-gray-700 hover:bg-gray-100/50 hover:text-gray-600/80"
+                            )}
+                            title={
+                              session.difficulty === 'easy' ? "Fácil (Dominei o assunto!)" :
+                              session.difficulty === 'medium' ? "Médio (Em consolidação)" :
+                              session.difficulty === 'hard' ? "Difícil (Preciso REFORÇAR!)" :
+                              "Definir dificuldade"
+                            }
+                          >
+                            <Star 
+                              size={12} 
+                              className={cn(
+                                "transition-all", 
+                                session.difficulty ? "fill-current" : "fill-none"
+                              )} 
+                            />
+                            {session.difficulty === 'hard' && (
+                              <span className="ml-1 text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                                Reforçar!
+                              </span>
+                            )}
+                          </button>
+
+                          {/* Absolute Dropdown Popover */}
+                          {activeDifficultyMenu === session.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-45 cursor-default" 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setActiveDifficultyMenu(null);
+                                }}
+                              />
+                              <div className="absolute left-0 mt-1 min-w-[200px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl py-1.5 z-50 text-left">
+                                <p className="px-3 py-1 text-[9px] uppercase tracking-wider font-extrabold text-gray-400 dark:text-gray-500">
+                                  Como está esse assunto?
+                                </p>
+                                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1 font-normal text-xs" />
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onUpdate(session.id, { difficulty: 'easy' });
+                                    setActiveDifficultyMenu(null);
+                                  }}
+                                  className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-gray-700 dark:text-gray-200 font-medium cursor-pointer text-left"
+                                >
+                                  <Star size={11} className="text-emerald-500 fill-emerald-500" />
+                                  <span>🟢 Fácil (Sem reforço)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onUpdate(session.id, { difficulty: 'medium' });
+                                    setActiveDifficultyMenu(null);
+                                  }}
+                                  className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-gray-700 dark:text-gray-200 font-medium cursor-pointer text-left"
+                                >
+                                  <Star size={11} className="text-amber-500 fill-amber-500" />
+                                  <span>🟡 Médio (Atenção)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onUpdate(session.id, { difficulty: 'hard' });
+                                    setActiveDifficultyMenu(null);
+                                  }}
+                                  className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 font-bold cursor-pointer text-left"
+                                >
+                                  <Star size={11} className="text-rose-500 fill-rose-500" />
+                                  <span className="text-rose-600 dark:text-rose-400 font-bold">🔴 Difícil (REFORÇAR!)</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-blue-700 dark:text-blue-400">
-                      <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-blue-800/50">
+                      <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-blue-800/50 text-xs font-semibold leading-tight text-center break-words max-w-[150px] sm:max-w-none">
                         {session.subjectName || 'N/A'}
                       </span>
                     </td>

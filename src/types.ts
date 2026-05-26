@@ -27,6 +27,7 @@ export interface StudySession {
   createdAt: any;
   updatedAt: any;
   userId: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export type SortConfig = {
