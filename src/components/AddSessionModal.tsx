@@ -177,7 +177,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
               </div>
 
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase flex items-center gap-1.5">
                       <CalendarIcon size={12} />
@@ -305,18 +305,18 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
                   </div>
                 )}
 
-                <div className="pt-4 flex gap-3 sticky bottom-0 bg-white dark:bg-gray-900 transition-colors duration-300">
+                <div className="pt-4 pb-2 flex flex-col-reverse sm:flex-row gap-3 sticky bottom-0 bg-white dark:bg-gray-900 transition-colors duration-300 border-t border-gray-100 dark:border-gray-800/50 mt-4">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="w-full sm:flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={!formData.subjectId || formData.topicIds.length === 0}
-                    className="flex-[2] px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:flex-[2] px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Salvar Registro
                   </button>

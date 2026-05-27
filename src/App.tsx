@@ -16,7 +16,9 @@ import {
   Lock,
   Sparkles,
   Eye,
-  EyeOff
+  EyeOff,
+  Library,
+  X
 } from 'lucide-react';
 import { StudySession, Subject, Topic } from './types';
 import { StudyTable } from './components/StudyTable';
@@ -55,6 +57,7 @@ export default function App() {
   const [firebaseReady, setFirebaseReady] = useState(true);
   const [view, setView] = useState<'history' | 'subjects'>('history');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Login Screen States
   const [email, setEmail] = useState('');
@@ -561,7 +564,7 @@ export default function App() {
       {/* Sidebar - Desktop */}
       <aside 
         className={cn(
-          "bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 transition-all duration-300 flex flex-col sticky top-0 h-screen z-40",
+          "bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 transition-all duration-300 flex-col sticky top-0 h-screen z-40 hidden md:flex flex-shrink-0",
           sidebarCollapsed ? "w-20 p-4" : "w-64 p-6"
         )}
       >
@@ -619,7 +622,7 @@ export default function App() {
                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
             )}
           >
-            <Settings size={18} className={cn(view === 'subjects' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300")} />
+            <Library size={18} className={cn(view === 'subjects' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300")} />
             {!sidebarCollapsed && <span>Temas/Matérias</span>}
           </button>
         </nav>
@@ -689,19 +692,152 @@ export default function App() {
         </div>
       </aside>
 
+      {/* Mobile Drawer Sidebar */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+            />
+            {/* Drawer Container */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 p-6 flex flex-col z-50 md:hidden shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-600 rounded-xl shadow-lg flex-shrink-0">
+                    <GraduationCap className="text-white" size={24} />
+                  </div>
+                  <span className="font-black text-lg tracking-tight dark:text-white">Metas</span>
+                </div>
+                <button 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <nav className="space-y-1.5 flex-1">
+                <button
+                  onClick={() => {
+                    setView('history');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all group gap-3",
+                    view === 'history' 
+                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm" 
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                  )}
+                >
+                  <LayoutDashboard size={18} className={cn(view === 'history' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300")} />
+                  <span>Histórico</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setView('subjects');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all group gap-3",
+                    view === 'subjects' 
+                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm" 
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                  )}
+                >
+                  <Library size={18} className={cn(view === 'subjects' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-gray-650")} />
+                  <span>Temas/Matérias</span>
+                </button>
+              </nav>
+
+              <div className="pt-6 border-t border-gray-100 dark:border-gray-800 mt-auto space-y-4">
+                <button 
+                  onClick={() => setDarkMode(!darkMode)}
+                  className="w-full flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 gap-3"
+                >
+                  {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                  <span>{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>
+                </button>
+
+                <div className="flex flex-col gap-2">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl flex items-center gap-3">
+                    <img 
+                      src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'Estudante'}`} 
+                      alt={user.displayName || 'Estudante'} 
+                      className="w-10 h-10 rounded-xl border-2 border-white dark:border-gray-700 shadow-sm flex-shrink-0"
+                    />
+                    <div className="overflow-hidden">
+                      <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{user.displayName || 'Estudante'}</p>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                          {user.email || 'Modo Sem Login'}
+                        </p>
+                        {user.uid === 'guest-local-user' && (
+                          <span className="text-[8px] max-w-max text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-1 py-0.5 rounded font-semibold">
+                            Modo Visitante
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={async () => {
+                      localStorage.removeItem('auth_guest');
+                      if (user.uid !== 'guest-local-user') {
+                        try {
+                          await logout();
+                        } catch (err) {
+                          console.error("Erro ao deslogar:", err);
+                        }
+                      }
+                      setUser(null);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-xs font-bold transition-all py-2.5 gap-3 px-4"
+                  >
+                    <LogOut size={16} />
+                    <span>Sair da Conta</span>
+                  </button>
+                </div>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         {/* Header */}
         <header className="h-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30 px-6 lg:px-10 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {view === 'history' ? 'Gestor de Estudos' : 'Base de Disciplinas'}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-              {view === 'history' 
-                ? 'Organize sua rotina e acompanhe seu progresso.' 
-                : 'Gerencie as matérias e os tópicos do seu edital.'}
-            </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 -ml-2 md:hidden hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg transition-colors cursor-pointer"
+              title="Abrir Menu"
+            >
+              <Menu size={22} />
+            </button>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                {view === 'history' ? 'Gestor de Estudos' : 'Base de Disciplinas'}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
+                {view === 'history' 
+                  ? 'Organize sua rotina e acompanhe seu progresso.' 
+                  : 'Gerencie as matérias e os tópicos do seu edital.'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             {view === 'history' && (

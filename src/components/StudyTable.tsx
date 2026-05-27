@@ -160,8 +160,20 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
         if (!sortConfig) return 0;
         const { key, direction } = sortConfig;
         
-        let aVal = a[key] as any;
-        let bVal = b[key] as any;
+        let aVal = a[key];
+        let bVal = b[key];
+
+        if (aVal === undefined || aVal === null) aVal = '';
+        if (bVal === undefined || bVal === null) bVal = '';
+
+        if (Array.isArray(aVal)) aVal = aVal.join(', ');
+        if (Array.isArray(bVal)) bVal = bVal.join(', ');
+
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          const collator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
+          const comp = collator.compare(aVal, bVal);
+          return direction === 'asc' ? comp : -comp;
+        }
 
         if (aVal < bVal) return direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return direction === 'asc' ? 1 : -1;
@@ -329,14 +341,12 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                               size={12} 
                               className={cn(
                                 "transition-all", 
-                                session.difficulty ? "fill-current" : "fill-none"
+                                session.difficulty === 'easy' && "fill-emerald-500 text-emerald-500",
+                                session.difficulty === 'medium' && "fill-amber-500 text-amber-500",
+                                session.difficulty === 'hard' && "fill-rose-500 text-rose-500",
+                                !session.difficulty && "fill-none text-gray-400"
                               )} 
                             />
-                            {session.difficulty === 'hard' && (
-                              <span className="ml-1 text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                                Reforçar!
-                              </span>
-                            )}
                           </button>
 
                           {/* Absolute Dropdown Popover */}
@@ -426,7 +436,7 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                             e.stopPropagation();
                             onDelete(session.id);
                           }}
-                          className="p-3 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all flex items-center justify-center border border-gray-100 dark:border-gray-800 hover:border-red-100 dark:hover:border-red-900/50 cursor-pointer relative z-50 bg-white dark:bg-gray-800 shadow-sm"
+                          className="p-3 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all flex items-center justify-center border border-gray-100 dark:border-gray-800 hover:border-red-100 dark:hover:border-red-900/50 cursor-pointer relative bg-white dark:bg-gray-800 shadow-sm"
                           title="Excluir Registro"
                         >
                           <Trash2 size={18} />
