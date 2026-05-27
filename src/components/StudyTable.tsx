@@ -13,7 +13,8 @@ import {
   Target,
   BookOpen,
   Tag,
-  Star
+  Star,
+  Pencil
 } from 'lucide-react';
 import { StudySession, SortConfig, FilterConfig } from '../types';
 import { cn } from '../lib/utils';
@@ -29,7 +30,7 @@ const GOAL_PALETTES = [
     border: "border-emerald-500"
   },
   {
-    bg: "bg-amber-50 dark:bg-amber-950/44 text-amber-700 dark:text-amber-300 border-amber-150 dark:border-amber-800/80",
+    bg: "bg-amber-50 dark:bg-amber-955/44 text-amber-700 dark:text-amber-300 border-amber-150 dark:border-amber-800/80",
     border: "border-amber-500"
   },
   {
@@ -68,6 +69,7 @@ interface StudyTableProps {
   sessions: StudySession[];
   onDelete: (id: string) => void;
   onUpdate: (id: string, updatedFields: Partial<StudySession>) => void;
+  onEdit: (session: StudySession) => void;
 }
 
 const TableHeader = ({ 
@@ -93,9 +95,9 @@ const TableHeader = ({
     className="px-4 py-3 text-left group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-200 dark:border-gray-800"
     onClick={() => onSort(sortKey)}
   >
-    <div className="flex items-center space-x-1">
+    <div className="flex items-center space-x-1.5">
       <Icon size={14} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-      <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+      <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
       <ArrowUpDown 
         size={12} 
         className={cn(
@@ -108,7 +110,7 @@ const TableHeader = ({
       <div className="mt-2" onClick={e => e.stopPropagation()}>
         <input
           type="text"
-          className="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none font-normal"
+          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none font-normal"
           placeholder={`Filtrar ${label}...`}
           value={filterValue}
           onChange={(e) => onFilterChange(sortKey, e.target.value)}
@@ -118,9 +120,9 @@ const TableHeader = ({
   </th>
 );
 
-export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUpdate }) => {
+export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUpdate, onEdit }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'activity', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'desc' });
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterConfig>({});
   const [activeDifficultyMenu, setActiveDifficultyMenu] = useState<string | null>(null);
@@ -182,35 +184,35 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
   }, [sessions, searchTerm, sortConfig, filters]);
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col h-full">
       {/* Table Toolbar */}
       <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-gray-800/50">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
-            placeholder="Pesquisar em tudo..."
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+            placeholder="Pesquisar registros..."
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-xs"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border shadow-sm",
+              "flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border shadow-xs cursor-pointer",
               showFilters 
-                ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400" 
-                : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                ? "bg-blue-50 dark:bg-blue-900/20 border-blue-250 dark:border-blue-800 text-blue-600 dark:text-blue-400" 
+                : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             )}
           >
-            <Filter size={16} />
+            <Filter size={15} />
             {showFilters ? 'Esconder Filtros' : 'Mostrar Filtros'}
           </button>
-          <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-2 hidden md:block" />
+          <div className="h-6 w-[1.5px] bg-gray-200 dark:bg-gray-700 mx-1 hidden md:block" />
           <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-            Mostrando {filteredAndSortedSessions.length} de {sessions.length} registros
+            {filteredAndSortedSessions.length} no total
           </span>
         </div>
       </div>
@@ -218,7 +220,7 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
       {/* Table Content */}
       <div className="overflow-x-auto overflow-y-auto flex-1">
         <table className="w-full border-collapse min-w-[800px]">
-          <thead className="sticky top-0 bg-white dark:bg-gray-900 z-10">
+          <thead className="sticky top-0 bg-white dark:bg-gray-900 z-10 shadow-xxs">
             <tr>
               <TableHeader 
                 label="Data" 
@@ -270,7 +272,7 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                 filterValue={filters['topicNames'] || ''}
                 onFilterChange={handleFilterChange}
               />
-              <th className="px-4 py-3 text-right border-b border-gray-200 dark:border-gray-800 w-20"></th>
+              <th className="px-4 py-3 text-right border-b border-gray-200 dark:border-gray-800 w-36"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -283,16 +285,16 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     key={session.id}
-                    className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group"
+                    className="hover:bg-blue-50/20 dark:hover:bg-blue-900/5 transition-colors group"
                   >
                     <td className={cn(
-                      "px-4 py-3 text-sm flex flex-col items-start gap-1 border-l-4 shadow-inner",
+                      "px-4 py-3 text-sm flex flex-col items-start gap-1 border-l-4 shadow-2xs",
                       getGoalColorClass(session.goal).border
                     )}>
-                      <span className="font-mono text-gray-550 dark:text-gray-400 font-semibold text-xs">
+                      <span className="font-mono text-gray-500 dark:text-gray-400 font-semibold text-xs">
                         {format(new Date(session.date), "dd/MM/yyyy")}
                       </span>
-                      <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-md font-bold uppercase tracking-tighter">
+                      <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-md font-bold uppercase tracking-tight">
                         {format(new Date(session.date), 'EEEE', { locale: ptBR })}
                       </span>
                     </td>
@@ -301,7 +303,7 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                         const style = getGoalColorClass(session.goal);
                         return (
                           <span className={cn(
-                            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap shadow-sm transition-all duration-300",
+                            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap shadow-xs transition-all duration-300",
                             style.bg
                           )}>
                             {session.goal}
@@ -310,11 +312,20 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                       })()}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-2 group/activity select-none relative">
-                        <span className="font-semibold text-gray-800 dark:text-gray-200">
-                          {session.activity}
-                        </span>
-                        
+                      <div className="flex items-center gap-3">
+                        {/* Clickable Activity cell trigger edit */}
+                        <div 
+                          onClick={() => onEdit(session)}
+                          className="flex items-center gap-2 group/activity text-left cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1.5 pr-2 rounded-lg"
+                          title="Clique para editar Atividade"
+                        >
+                          <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover/activity:text-blue-600 dark:group-hover/activity:text-blue-400">
+                            {session.activity}
+                          </span>
+                          <Pencil size={11} className="opacity-0 group-hover/activity:opacity-100 text-blue-500 transition-opacity flex-shrink-0" />
+                        </div>
+
+                        {/* Re-designed performance selector triggers UPWARD popup with NO names, only color identifiers */}
                         <div className="relative inline-block">
                           <button
                             type="button"
@@ -326,15 +337,15 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                             className={cn(
                               "p-1 rounded-md cursor-pointer transition-all flex items-center justify-center border",
                               session.difficulty === 'easy' && "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 border-emerald-100 dark:border-emerald-800/50 hover:bg-emerald-100/50",
-                              session.difficulty === 'medium' && "bg-amber-50 dark:bg-amber-900/30 text-amber-500 border-amber-100 dark:border-amber-800/50 hover:bg-amber-100/50",
+                              session.difficulty === 'medium' && "bg-amber-50 dark:bg-amber-900/30 text-amber-500 border-amber-105 dark:border-amber-800/50 hover:bg-amber-100/50",
                               session.difficulty === 'hard' && "bg-rose-50 dark:bg-rose-900/30 text-rose-500 border-rose-100 dark:border-rose-800/50 hover:bg-rose-100/50",
                               (!session.difficulty) && "bg-gray-50/50 dark:bg-gray-800/50 text-gray-400 border-gray-100 dark:border-gray-700 hover:bg-gray-100/50 hover:text-gray-600/80"
                             )}
                             title={
-                              session.difficulty === 'easy' ? "Fácil (Dominei o assunto!)" :
-                              session.difficulty === 'medium' ? "Médio (Em consolidação)" :
-                              session.difficulty === 'hard' ? "Difícil (Preciso REFORÇAR!)" :
-                              "Definir dificuldade"
+                              session.difficulty === 'easy' ? "Verde (Dominei!)" :
+                              session.difficulty === 'medium' ? "Amarelo (Em consolidação)" :
+                              session.difficulty === 'hard' ? "Vermelho (Preciso revisar!)" :
+                              "Definir desempenho / reforço"
                             }
                           >
                             <Star 
@@ -344,12 +355,12 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                                 session.difficulty === 'easy' && "fill-emerald-500 text-emerald-500",
                                 session.difficulty === 'medium' && "fill-amber-500 text-amber-500",
                                 session.difficulty === 'hard' && "fill-rose-500 text-rose-500",
-                                !session.difficulty && "fill-none text-gray-400"
+                                !session.difficulty && "fill-none text-gray-450"
                               )} 
                             />
                           </button>
 
-                          {/* Absolute Dropdown Popover */}
+                          {/* High-end small horizontal picker opening UPWARDS above star */}
                           {activeDifficultyMenu === session.id && (
                             <>
                               <div 
@@ -360,11 +371,7 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                                   setActiveDifficultyMenu(null);
                                 }}
                               />
-                              <div className="absolute left-0 mt-1 min-w-[200px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl py-1.5 z-50 text-left">
-                                <p className="px-3 py-1 text-[9px] uppercase tracking-wider font-extrabold text-gray-400 dark:text-gray-500">
-                                  Como está esse assunto?
-                                </p>
-                                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1 font-normal text-xs" />
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-white dark:bg-gray-805 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-1.5 z-55 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 select-none">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -373,11 +380,13 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                                     onUpdate(session.id, { difficulty: 'easy' });
                                     setActiveDifficultyMenu(null);
                                   }}
-                                  className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-gray-700 dark:text-gray-200 font-medium cursor-pointer text-left"
+                                  className="p-1 px-1.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                  title="Fácil (Sem necessidade de reforço)"
                                 >
+                                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0 animate-pulse" />
                                   <Star size={11} className="text-emerald-500 fill-emerald-500" />
-                                  <span>🟢 Fácil (Sem reforço)</span>
                                 </button>
+                                
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -386,11 +395,13 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                                     onUpdate(session.id, { difficulty: 'medium' });
                                     setActiveDifficultyMenu(null);
                                   }}
-                                  className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-gray-700 dark:text-gray-200 font-medium cursor-pointer text-left"
+                                  className="p-1 px-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-955/40 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                  title="Médio (Precisa de alguma atenção)"
                                 >
+                                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0 animate-pulse" />
                                   <Star size={11} className="text-amber-500 fill-amber-500" />
-                                  <span>🟡 Médio (Atenção)</span>
                                 </button>
+
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -399,10 +410,27 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                                     onUpdate(session.id, { difficulty: 'hard' });
                                     setActiveDifficultyMenu(null);
                                   }}
-                                  className="w-full px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 font-bold cursor-pointer text-left"
+                                  className="p-1 px-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-955/40 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                  title="Difícil (Preciso REFORÇAR!)"
                                 >
+                                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0 animate-pulse" />
                                   <Star size={11} className="text-rose-500 fill-rose-500" />
-                                  <span className="text-rose-600 dark:text-rose-400 font-bold">🔴 Difícil (REFORÇAR!)</span>
+                                </button>
+
+                                <div className="w-[1.5px] h-4 bg-gray-200 dark:bg-gray-700 mx-1 flex-shrink-0" />
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onUpdate(session.id, { difficulty: undefined });
+                                    setActiveDifficultyMenu(null);
+                                  }}
+                                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 transition-colors cursor-pointer"
+                                  title="Limpar classificação"
+                                >
+                                  <Star size={11} className="text-gray-400 fill-none" />
                                 </button>
                               </div>
                             </>
@@ -410,17 +438,17 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-blue-700 dark:text-blue-400">
+                    <td className="px-4 py-3 text-sm font-medium text-blue-750 dark:text-blue-400">
                       <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-100 dark:border-blue-800/50 text-xs font-semibold leading-tight text-center break-words max-w-[150px] sm:max-w-none">
                         {session.subjectName || 'N/A'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex flex-col gap-1.5 items-start">
+                      <div className="flex flex-wrap gap-1.5 items-start">
                         {(session.topicNames || []).map((name, idx) => (
                           <span 
                             key={idx}
-                            className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-[10px] font-bold border border-gray-200 dark:border-gray-700 leading-tight uppercase tracking-wider"
+                            className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-[10px] font-bold border border-gray-200 dark:border-gray-700 leading-tight uppercase tracking-wider whitespace-nowrap"
                           >
                             {name}
                           </span>
@@ -428,7 +456,21 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end">
+                      {/* Row Action buttons */}
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onEdit(session);
+                          }}
+                          className="p-2.5 text-gray-450 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all flex items-center justify-center border border-gray-100 dark:border-gray-800 hover:border-blue-100 dark:hover:border-blue-900/50 cursor-pointer relative bg-white dark:bg-gray-800 shadow-xs"
+                          title="Editar Registro"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        
                         <button
                           type="button"
                           onClick={(e) => {
@@ -436,10 +478,10 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                             e.stopPropagation();
                             onDelete(session.id);
                           }}
-                          className="p-3 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all flex items-center justify-center border border-gray-100 dark:border-gray-800 hover:border-red-100 dark:hover:border-red-900/50 cursor-pointer relative bg-white dark:bg-gray-800 shadow-sm"
+                          className="p-2.5 text-gray-450 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all flex items-center justify-center border border-gray-100 dark:border-gray-800 hover:border-red-100 dark:hover:border-red-900/50 cursor-pointer relative bg-white dark:bg-gray-800 shadow-xs"
                           title="Excluir Registro"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -450,7 +492,7 @@ export const StudyTable: React.FC<StudyTableProps> = ({ sessions, onDelete, onUp
                   <td colSpan={6} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-full">
-                        <Search size={32} className="text-gray-300 dark:text-gray-600" />
+                        <Search size={32} className="text-gray-300 dark:text-gray-650" />
                       </div>
                       <p className="text-gray-500 dark:text-gray-400 font-medium">Nenhum registro encontrado</p>
                       <p className="text-sm text-gray-400 dark:text-gray-500">Tente ajustar seus filtros ou busca.</p>

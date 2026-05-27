@@ -31,6 +31,7 @@ import {
   db, 
   logout,
   loginWithEmail,
+  registerWithEmail,
   handleFirestoreError,
   OperationType,
   testConnection,
@@ -57,11 +58,13 @@ export default function App() {
   const [firebaseReady, setFirebaseReady] = useState(true);
   const [view, setView] = useState<'history' | 'subjects'>('history');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<StudySession | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Login Screen States
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -365,7 +368,11 @@ export default function App() {
     setAuthError(null);
     setAuthLoading(true);
     try {
-      await loginWithEmail(email, password);
+      if (isRegistering) {
+        await registerWithEmail(email, password);
+      } else {
+        await loginWithEmail(email, password);
+      }
       localStorage.removeItem('auth_guest');
     } catch (error: any) {
       console.error("Erro na autenticação:", error);
@@ -376,9 +383,13 @@ export default function App() {
                           translateMsg.includes('API key');
 
       if (isApiKeyErr) {
-        translateMsg = "Erro no Netlify/Prod: A chave de API do Firebase não está configurada ou foi compilada em branco. No Netlify, você precisa adicionar as variáveis em 'Site settings > Environment variables' e depois realizar um NOVO DEPLOY para embuti-las no código compilado.";
+        translateMsg = "Erro no Firebase: A chave de API do Firebase não está configurada ou foi compilada em branco. Adicione as chaves no painel Secrets.";
       } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        translateMsg = "E-mail ou senha incorretos.";
+        translateMsg = "E-mail ou senha incorretos ou conta não encontrada.";
+      } else if (error.code === 'auth/email-already-in-use') {
+        translateMsg = "Este e-mail já está em uso por outra conta.";
+      } else if (error.code === 'auth/weak-password') {
+        translateMsg = "A senha é muito fraca (mínimo de 6 caracteres).";
       } else if (error.code === 'auth/invalid-email') {
         translateMsg = "Formato de e-mail inválido.";
       } else if (error.code === 'auth/network-request-failed') {
@@ -430,7 +441,7 @@ export default function App() {
         <div className="absolute top-4 right-4">
           <button 
             onClick={() => setDarkMode(!darkMode)}
-            className="p-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            className="p-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer"
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -440,7 +451,7 @@ export default function App() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="max-w-md w-full bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 space-y-6"
+          className="max-w-md w-full bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 space-y-6 animate-pulse-once"
         >
           <div className="text-center space-y-2">
             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-200 dark:shadow-none mb-3">
@@ -453,9 +464,13 @@ export default function App() {
           </div>
 
           <div className="flex flex-col gap-1 text-center bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-2xl border border-gray-100/50 dark:border-gray-800/50">
-            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Acesse sua Conta</h2>
+            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+              {isRegistering ? 'Criar uma Conta' : 'Acesse sua Conta'}
+            </h2>
             <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              Entre com seu e-mail e senha para salvar e sincronizar sua rotina
+              {isRegistering 
+                ? 'Cadastre-se gratuitamente para salvar e sincronizar sua rotina em nuvem' 
+                : 'Entre com seu e-mail e senha para salvar e sincronizar sua rotina'}
             </p>
           </div>
 
@@ -485,7 +500,7 @@ export default function App() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-11 pr-12 py-3 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 rounded-2xl outline-none transition-all text-sm font-semibold text-gray-900 dark:text-white"
-                  placeholder="Sua senha"
+                  placeholder="Mínimo 6 caracteres"
                 />
                 <button
                   type="button"
@@ -506,29 +521,41 @@ export default function App() {
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-70 disabled:pointer-events-none"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-70 disabled:pointer-events-none cursor-pointer"
             >
               {authLoading ? (
                 <Loader2 className="animate-spin" size={18} />
               ) : (
                 <>
                   <LogIn size={18} />
-                  <span>Entrar</span>
+                  <span>{isRegistering ? 'Cadastrar Conta' : 'Entrar'}</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="relative flex items-center gap-4 py-1">
-            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
-            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">ou</span>
-            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
-          </div>
+          <div className="flex flex-col gap-2.5 items-center text-center">
+            <button
+              onClick={() => {
+                setIsRegistering(!isRegistering);
+                setAuthError(null);
+              }}
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            >
+              {isRegistering 
+                ? 'Já possui uma conta? Acesse por aqui' 
+                : 'Não tem uma conta? Crie uma gratuitamente'}
+            </button>
 
-          <div className="text-center">
+            <div className="relative w-full flex items-center gap-4 py-1">
+              <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
+              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">ou</span>
+              <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
+            </div>
+
             <button
               onClick={handleEnterAsGuest}
-              className="text-xs font-semibold text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+              className="text-xs font-semibold text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
             >
               Continuar como visitante (Modo Local Offline)
             </button>
@@ -842,8 +869,11 @@ export default function App() {
           <div className="flex items-center gap-4">
             {view === 'history' && (
               <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-95"
+                onClick={() => {
+                  setEditingSession(null);
+                  setIsModalOpen(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-95 cursor-pointer"
               >
                 <Plus size={20} />
                 <span className="hidden sm:inline">Novo Registro</span>
@@ -860,7 +890,15 @@ export default function App() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registros de Atividades</h3>
               </div>
-              <StudyTable sessions={sessions} onDelete={handleDeleteSession} onUpdate={handleUpdateSession} />
+              <StudyTable 
+                sessions={sessions} 
+                onDelete={handleDeleteSession} 
+                onUpdate={handleUpdateSession} 
+                onEdit={(session) => {
+                  setEditingSession(session);
+                  setIsModalOpen(true);
+                }}
+              />
             </div>
           ) : (
             <SubjectsView 
@@ -877,13 +915,18 @@ export default function App() {
 
       <AddSessionModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingSession(null);
+        }} 
         onAdd={handleAddSession}
         availableSubjects={subjects}
         availableTopics={topics}
         sessions={sessions}
         onAddSubject={handleAddSubject}
         onAddTopic={handleAddTopic}
+        editingSession={editingSession}
+        onUpdateSession={handleUpdateSession}
       />
     </div>
   );
